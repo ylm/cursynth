@@ -378,6 +378,7 @@ namespace mopo {
   }
 
   void Cursynth::setupMidi() {
+#ifdef YOLOMODE
     RtMidiIn* midi_in = new RtMidiIn();
     if (midi_in->getPortCount() <= 0) {
       std::cout << "No midi devices found.\n";
@@ -391,8 +392,13 @@ namespace mopo {
       device->setCallback(&midiCallback, (void*)this);
       midi_ins_.push_back(device);
     }
-
     delete midi_in;
+#else
+    RtMidiIn* device = new RtMidiIn();
+    device->openVirtualPort("cursynth");
+    device->setCallback(&midiCallback, (void*)this);
+    midi_ins_.push_back(device);
+#endif
   }
 
   void Cursynth::processMidi(std::vector<unsigned char>* message) {
@@ -405,6 +411,7 @@ namespace mopo {
     int midi_val = message->at(2);
     std::string selected_control_name = gui_.getCurrentControl();
     Control* selected_control = controls_.at(selected_control_name);
+	if (!(midi_port&0xf)) {
     if (midi_port >= 144 && midi_port < 160) {
       // A MIDI keyboard key was pressed. Play a note.
       int midi_note = midi_id;
@@ -451,6 +458,7 @@ namespace mopo {
       if (midi_id == MOD_WHEEL_ID)
         synth_.setModWheel(midi_val);
     }
+	}
     unlock();
   }
 
